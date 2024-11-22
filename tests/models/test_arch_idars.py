@@ -2,10 +2,10 @@
 
 import torch
 
-from tiatoolbox.models.architecture.idars import IDaRS
+from tiatoolbox.models import IDaRS
 
 
-def test_functional():
+def test_functional() -> None:
     """Functional test for architectures."""
     # test forward
     samples = torch.rand(4, 3, 224, 224, dtype=torch.float32)

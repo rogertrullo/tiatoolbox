@@ -2,47 +2,50 @@
   <img src="https://raw.githubusercontent.com/TissueImageAnalytics/tiatoolbox/develop/docs/tiatoolbox-logo.png">
 </p>
 <h1 align="center">TIA Toolbox</h1>
-<p align="center">
-  <a href="https://tia-toolbox.readthedocs.io/en/latest/?badge=latest">
-    <img src="https://readthedocs.org/projects/tia-toolbox/badge/?version=latest" alt="Documentation Status" />
-  </a>
-  <a href="https://travis-ci.com/github/TissueImageAnalytics/tiatoolbox">
-    <img src="https://app.travis-ci.com/TissueImageAnalytics/tiatoolbox.svg?branch=master" alt="Travis CI Status" />
-  </a>
-    <a href="https://codecov.io/gh/TissueImageAnalytics/tiatoolbox">
-      <img src="https://codecov.io/gh/TissueImageAnalytics/tiatoolbox/branch/master/graph/badge.svg?token=7UZEMacQHm"/>
-    </a>
-    <a href="https://github.com/psf/black">
-      <img src="https://img.shields.io/badge/code%20style-black-000000.svg"/>
-    </a>
-    <a href="https://github.com/TissueImageAnalytics/tiatoolbox/tree/master#license">
-      <img src="https://img.shields.io/badge/license-BSD--3--clause-orange" />
-    </a>
-  <br>
-    <br>
-  <a href="https://badge.fury.io/py/tiatoolbox">
+<h3 align="center">Computational Pathology Toolbox developed at the TIA Centre</h3>
+
+<a href="https://badge.fury.io/py/tiatoolbox">
     <img src="https://badge.fury.io/py/tiatoolbox.svg" alt="PyPI Status" />
   </a>
     <a href="https://pepy.tech/project/tiatoolbox">
-      <img src="https://static.pepy.tech/personalized-badge/tiatoolbox?period=total&units=international_system&left_color=grey&right_color=green&left_text=Downloads"/>
+      <img src="https://static.pepy.tech/personalized-badge/tiatoolbox?period=total&units=international_system&left_color=grey&right_color=green&left_text=downloads" alt="pypi Downloads"/>
     </a>
     <br>
     <a href="https://anaconda.org/conda-forge/tiatoolbox">
-      <img src="https://img.shields.io/conda/vn/conda-forge/tiatoolbox" />
+      <img src="https://img.shields.io/conda/vn/conda-forge/tiatoolbox"  alt="conda-forge badge"/>
     </a>
     <a href="https://anaconda.org/conda-forge/tiatoolbox">
-        <img src="https://anaconda.org/conda-forge/tiatoolbox/badges/downloads.svg" />
+            <img src="https://shields.io/conda/dn/conda-forge/tiatoolbox"  alt="conda-forge downloads"/>
     </a>
-
+  <br>
+  <a href="https://tia-toolbox.readthedocs.io/en/latest/?badge=latest">
+    <img src="https://readthedocs.org/projects/tia-toolbox/badge/?version=latest" alt="Documentation Status" />
+  </a>
+  <br>
+  <a href="#license">
+    <img alt="GitHub license" src="https://img.shields.io/static/v1?label=license&message=BSD-3-Clause&color=green"></a>
+  <br>
+  <br>
+  <a href="https://github.com/TissueImageAnalytics/tiatoolbox/actions/workflows/pip-install.yml">
+    <img src="https://img.shields.io/pypi/pyversions/tiatoolbox.svg"  alt="Supported Python versions"/>
+  </a>
 <br>
-    <br>
-  <a href="https://doi.org/10.1101/2021.12.23.474029"><img src="https://img.shields.io/badge/bioRxiv-10.1101%2F2021.12.23.474029-blue" alt="DOI"></a>
-  <a href="https://zenodo.org/badge/latestdoi/267705904"><img src="https://zenodo.org/badge/267705904.svg" alt="DOI"></a>
-</p>
-
-Computational Pathology Toolbox developed at the TIA Centre
+<a href="https://github.com/TissueImageAnalytics/tiatoolbox/actions/workflows/python-package.yml">
+    <img src="https://github.com/TissueImageAnalytics/tiatoolbox/actions/workflows/python-package.yml/badge.svg"  alt="GitHub Workflow passing"/>
+  </a>
+  <a href="https://codecov.io/gh/TissueImageAnalytics/tiatoolbox">
+      <img src="https://codecov.io/gh/TissueImageAnalytics/tiatoolbox/branch/master/graph/badge.svg?token=7UZEMacQHm" alt="Code Coverage"/>
+  </a>
+<a href="https://github.com/astral-sh/ruff">
+      <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Code Style black"/>
+    </a>
+  <br><br>
+  <a href="#cite-this-repository"><img src="https://img.shields.io/badge/Cite%20this%20repository-BibTeX-brightgreen" alt="DOI"></a> <a href="https://doi.org/10.1038/s43856-022-00186-5"><img src="https://img.shields.io/badge/DOI-10.1038%2Fs43856--022--00186--5-blue" alt="DOI"></a>
+<br>
 
 ## Getting Started
+
+TIAToolbox is a computational pathology toolbox developed by TIA Centre that provides an end-to-end API for pathology image analysis using best practices. It is based on **[PyTorch](https://pytorch.org/)**, a popular deep learning framework that enables efficient and flexible implementation of state-of-the-art algorithms. TIAToolbox supports many features through a command-line interface and can integrate with standard PyTorch modules. It also offers tools for data loading, pre-processing, model inference, post-processing, and visualization. Whether you are a computational, biomedical, or clinical researcher, TIAToolbox can help you get started in digital pathology with minimal effort.
 
 ### All Users
 
@@ -60,7 +63,7 @@ The [bash](https://www.gnu.org/software/bash) shell is available on all commonly
 
 [conda](https://github.com/conda/conda) is a management system for software packages and [virtual environments](https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/environments.html). To get `conda`, download [Anaconda](https://www.anaconda.com/), which includes hundreds of the most useful Python packages, using 2GB disk space. Alternatively, [miniconda](https://docs.conda.io/en/latest/miniconda.html) uses 400MB, and packages can be added as needed.
 
-[Github](https://github.com/about) is powered by the version control system [git](https://git-scm.com/), which has many users and uses. In Github, it is used to track versions of code and other documents.
+[GitHub](https://github.com/about) is powered by the version control system [git](https://git-scm.com/), which has many users and uses. In GitHub, it is used to track versions of code and other documents.
 
 ### Examples Taster
 
@@ -85,7 +88,7 @@ tiatoolbox supports various features through command line. For more information,
 
 Prepare a computer as a convenient platform for further development of the Python package `tiatoolbox` and related programs as follows.
 
-1. Install [pre-requisite software](https://tia-toolbox.readthedocs.io/en/latest/installation.html)
+1. Install [pre-requisite software](https://tia-toolbox.readthedocs.io/en/latest/installation.html#prerequisites)
 1. Open a terminal window<br/>
 
 ```sh
@@ -107,16 +110,16 @@ Prepare a computer as a convenient platform for further development of the Pytho
 5. Create virtual environment for TIAToolbox using
 
 ```sh
-    $ conda env create -f requirements.dev.conda.yml # for linux/mac only.
+    $ conda create -n tiatoolbox-dev python=3.9 # select version of your choice
     $ conda activate tiatoolbox-dev
+    $ pip install -r requirements/requirements_dev.txt
 ```
 
 or
 
 ```sh
-    $ conda create -n tiatoolbox-dev python=3.8 # select version of your choice
+    $ conda env create -f requirements/requirements.dev.conda.yml # for linux/mac only.
     $ conda activate tiatoolbox-dev
-    $ pip install -r requirements_dev.txt
 ```
 
 6. To use the packages installed in the environment, run the command:
@@ -127,16 +130,28 @@ or
 
 ### License
 
-The source code TIA Toolbox (tiatoolbox) as hosted on GitHub is released under the [The 3-Clause BSD License].
+The source code TIA Toolbox (tiatoolbox) as hosted on GitHub is released under the [BSD-3-Clause license](https://github.com/TissueImageAnalytics/tiatoolbox/blob/develop/LICENSE). The full text of the licence is included in [LICENSE](https://raw.githubusercontent.com/TissueImageAnalytics/tiatoolbox/develop/LICENSE).
 
-The full text of the licence is included in [LICENSE](https://raw.githubusercontent.com/TissueImageAnalytics/tiatoolbox/develop/LICENSE).
+Models weights are dependent on the datasets that they were trained on. Please refer to the [documentation](https://tia-toolbox.readthedocs.io/en/latest/pretrained.html) for more details.
 
-### Auxiliary Files
+### Cite this repository
 
-Auxiliary files, such as pre-trained model weights downloaded from the TIA Centre webpage (https://warwick.ac.uk/tia/), are provided under the [Creative Commons Attribution-NonCommercial-ShareAlike Version 4 (CC BY-NC-SA 4.0) license](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+If you find TIAToolbox useful or use it in your research, please consider citing our paper:
 
-### Dual License
-
-If you would like to use any of the source code or auxiliary files (e.g. pre-trained model weights) under a different license agreement please contact the Tissue Image Analytics (TIA) Centre at the University of Warwick (tia@dcs.warwick.ac.uk).
-
-[the 3-clause bsd license]: https://opensource.org/licenses/BSD-3-Clause
+```
+@article{
+    Pocock2022,
+    author = {Pocock, Johnathan and Graham, Simon and Vu, Quoc Dang and Jahanifar, Mostafa and Deshpande, Srijay and Hadjigeorghiou, Giorgos and Shephard, Adam and Bashir, Raja Muhammad Saad and Bilal, Mohsin and Lu, Wenqi and Epstein, David and Minhas, Fayyaz and Rajpoot, Nasir M and Raza, Shan E Ahmed},
+    doi = {10.1038/s43856-022-00186-5},
+    issn = {2730-664X},
+    journal = {Communications Medicine},
+    month = {sep},
+    number = {1},
+    pages = {120},
+    publisher = {Springer US},
+    title = {{TIAToolbox as an end-to-end library for advanced tissue image analytics}},
+    url = {https://www.nature.com/articles/s43856-022-00186-5},
+    volume = {2},
+    year = {2022}
+}
+```

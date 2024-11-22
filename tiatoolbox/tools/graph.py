@@ -4,19 +4,21 @@ from __future__ import annotations
 
 from collections import defaultdict
 from numbers import Number
-from typing import Callable, Dict, Optional, Union
+from typing import TYPE_CHECKING, Callable, cast
 
 import numpy as np
 import torch
 import umap
 from matplotlib import pyplot as plt
-from matplotlib.axes import Axes
-from numpy.typing import ArrayLike
 from scipy.cluster import hierarchy
 from scipy.spatial import Delaunay, cKDTree
 
+if TYPE_CHECKING:  # pragma: no cover
+    from matplotlib.axes import Axes
+    from numpy.typing import ArrayLike
 
-def delaunay_adjacency(points: ArrayLike, dthresh: Number) -> list:
+
+def delaunay_adjacency(points: np.ndarray, dthresh: float) -> np.ndarray:
     """Create an adjacency matrix via Delaunay triangulation from a list of coordinates.
 
     Points which are further apart than dthresh will not be connected.
@@ -24,9 +26,9 @@ def delaunay_adjacency(points: ArrayLike, dthresh: Number) -> list:
     See https://en.wikipedia.org/wiki/Adjacency_matrix.
 
     Args:
-        points (ArrayLike):
+        points (np.ndarray):
             An nxm list of coordinates.
-        dthresh (int):
+        dthresh (float):
             Distance threshold for triangulation.
 
     Returns:
@@ -35,22 +37,27 @@ def delaunay_adjacency(points: ArrayLike, dthresh: Number) -> list:
             and 0 indicates unconnected.
 
     Example:
-        >>> points = np.random.rand(100, 2)
+        >>> rng = np.random.default_rng()
+        >>> points = rng.random((100, 2))
         >>> adjacency = delaunay_adjacency(points)
 
     """
     # Validate inputs
     if not isinstance(dthresh, Number):
-        raise TypeError("dthresh must be a number.")
-    if len(points) < 4:
-        raise ValueError("Points must have length >= 4.")
-    if len(np.shape(points)) != 2:
-        raise ValueError("Points must have an NxM shape.")
+        msg = "dthresh must be a number."
+        raise TypeError(msg)
+    if len(points) < 4:  # noqa: PLR2004
+        msg = "Points must have length >= 4."
+        raise ValueError(msg)
+    if len(np.shape(points)) != 2:  # noqa: PLR2004
+        msg = "Points must have an NxM shape."
+        raise ValueError(msg)
     # Apply Delaunay triangulation to the coordinates to get a
     # tessellation of triangles.
     tessellation = Delaunay(points)
     # Find all connected neighbours for each point in the set of
     # triangles. Starting with an empty dictionary.
+    triangle_neighbours: defaultdict
     triangle_neighbours = defaultdict(set)
     # Iterate over each triplet of point indexes which denotes a
     # triangle within the tessellation.
@@ -96,20 +103,21 @@ def triangle_signed_area(triangle: ArrayLike) -> int:
     # Validate inputs
     triangle = np.asarray(triangle)
     if triangle.shape != (3, 2):
-        raise ValueError("Input triangle must be a 3x2 array.")
+        msg = "Input triangle must be a 3x2 array."
+        raise ValueError(msg)
     # Calculate the area of the triangle
-    return 0.5 * (  # noqa: ECE001
+    return 0.5 * (
         triangle[0, 0] * (triangle[1, 1] - triangle[2, 1])
         + triangle[1, 0] * (triangle[2, 1] - triangle[0, 1])
         + triangle[2, 0] * (triangle[0, 1] - triangle[1, 1])
     )
 
 
-def edge_index_to_triangles(edge_index: ArrayLike) -> ArrayLike:
+def edge_index_to_triangles(edge_index: np.ndarray) -> np.ndarray:
     """Convert an edged index to triangle simplices (triplets of coordinate indices).
 
     Args:
-        edge_index (ArrayLike):
+        edge_index (np.ndarray):
             An Nx2 array of edges.
 
     Returns:
@@ -117,7 +125,8 @@ def edge_index_to_triangles(edge_index: ArrayLike) -> ArrayLike:
             An Nx3 array of triangles.
 
     Example:
-        >>> points = np.random.rand(100, 2)
+        >>> rng = np.random.default_rng()
+        >>> points = rng.random((100, 2))
         >>> adjacency = delaunay_adjacency(points)
         >>> edge_index = affinity_to_edge_index(adjacency)
         >>> triangles = edge_index_to_triangles(edge_index)
@@ -125,8 +134,9 @@ def edge_index_to_triangles(edge_index: ArrayLike) -> ArrayLike:
     """
     # Validate inputs
     edge_index_shape = np.shape(edge_index)
-    if edge_index_shape[0] != 2 or len(edge_index_shape) != 2:
-        raise ValueError("Input edge_index must be a 2xM matrix.")
+    if edge_index_shape[0] != 2 or len(edge_index_shape) != 2:  # noqa: PLR2004
+        msg = "Input edge_index must be a 2xM matrix."
+        raise ValueError(msg)
     nodes = np.unique(edge_index).tolist()
     neighbours = defaultdict(set)
     edges = edge_index.T.tolist()
@@ -135,7 +145,7 @@ def edge_index_to_triangles(edge_index: ArrayLike) -> ArrayLike:
         neighbours[a].add(b)
         neighbours[b].add(a)
     # Remove any nodes with less than two neighbours
-    nodes = [node for node in nodes if len(neighbours[node]) >= 2]
+    nodes = [node for node in nodes if len(neighbours[node]) >= 2]  # noqa: PLR2004
     # Find the triangles
     triangles = set()
     for node in nodes:
@@ -147,9 +157,9 @@ def edge_index_to_triangles(edge_index: ArrayLike) -> ArrayLike:
 
 
 def affinity_to_edge_index(
-    affinity_matrix: Union[torch.Tensor, ArrayLike],
-    threshold: Number = 0.5,
-) -> Union[torch.tensor, ArrayLike]:
+    affinity_matrix: torch.Tensor | np.ndarray,
+    threshold: float = 0.5,
+) -> torch.Tensor | np.ndarray:
     """Convert an affinity matrix (similarity matrix) to an edge index.
 
     Converts an NxN affinity matrix to a 2xM edge index, where M is the
@@ -157,35 +167,37 @@ def affinity_to_edge_index(
     value (defaults to 0.5).
 
     Args:
-        affinity_matrix:
+        affinity_matrix (torch.Tensor | np.ndarray):
             An NxN matrix of affinities between nodes.
         threshold (Number):
             Threshold above which to be considered connected. Defaults
             to 0.5.
 
     Returns:
-        ArrayLike or torch.Tensor:
+        torch.Tensor | np.ndarray:
             The edge index of shape (2, M).
 
     Example:
-        >>> points = np.random.rand(100, 2)
+        >>> rng = np.random.default_rng()
+        >>> points = rng.random((100, 2))
         >>> adjacency = delaunay_adjacency(points)
         >>> edge_index = affinity_to_edge_index(adjacency)
 
     """
     # Validate inputs
     input_shape = np.shape(affinity_matrix)
-    if len(input_shape) != 2 or len(np.unique(input_shape)) != 1:
-        raise ValueError("Input affinity_matrix must be square (NxN).")
+    if len(input_shape) != 2 or len(np.unique(input_shape)) != 1:  # noqa: PLR2004
+        msg = "Input affinity_matrix must be square (NxN)."
+        raise ValueError(msg)
     # Handle cases for pytorch and numpy inputs
     if isinstance(affinity_matrix, torch.Tensor):
-        return (affinity_matrix > threshold).nonzero().t().contiguous()
+        return (affinity_matrix > threshold).nonzero().t().contiguous().to(torch.int64)
     return np.ascontiguousarray(
-        np.stack((affinity_matrix > threshold).nonzero(), axis=1).T
+        np.stack((affinity_matrix > threshold).nonzero(), axis=1).T.astype(np.int64),
     )
 
 
-class SlideGraphConstructor:  # noqa: PIE798
+class SlideGraphConstructor:
     """Construct a graph using the SlideGraph+ (Liu et al. 2021) method.
 
     This uses a hybrid agglomerative clustering which uses a weighted
@@ -196,7 +208,7 @@ class SlideGraphConstructor:  # noqa: PIE798
     """
 
     @staticmethod
-    def _umap_reducer(graph: Dict[str, ArrayLike]) -> ArrayLike:
+    def _umap_reducer(graph: dict[str, np.ndarray]) -> np.ndarray:
         """Default reduction which reduces `graph["x"]` to 3D values.
 
         Reduces graph features to 3D values using UMAP which are suitable
@@ -206,8 +218,9 @@ class SlideGraphConstructor:  # noqa: PIE798
             graph (dict):
                 A graph with keys "x", "edge_index", and optionally
                 "coordinates".
+
         Returns:
-            ArrayLike:
+            np.ndarray:
                 A UMAP embedding of `graph["x"]` with shape (N, 3) and
                 values ranging from 0 to 1.
         """
@@ -219,15 +232,15 @@ class SlideGraphConstructor:  # noqa: PIE798
 
     @staticmethod
     def build(
-        points: ArrayLike,
-        features: ArrayLike,
-        lambda_d: Number = 3.0e-3,
-        lambda_f: Number = 1.0e-3,
-        lambda_h: Number = 0.8,
-        connectivity_distance: Number = 4000,
-        neighbour_search_radius: Number = 2000,
-        feature_range_thresh: Optional[Number] = 1e-4,
-    ) -> Dict[str, ArrayLike]:
+        points: np.ndarray,
+        features: np.ndarray,
+        lambda_d: float = 3.0e-3,
+        lambda_f: float = 1.0e-3,
+        lambda_h: float = 0.8,
+        connectivity_distance: int = 4000,
+        neighbour_search_radius: int = 2000,
+        feature_range_thresh: float | None = 1e-4,
+    ) -> dict[str, np.ndarray]:
         """Build a graph via hybrid clustering in spatial and feature space.
 
         The graph is constructed via hybrid hierarchical clustering
@@ -238,7 +251,7 @@ class SlideGraphConstructor:  # noqa: PIE798
 
         The clustering uses a distance kernel, ranging between 0 and 1,
         which is a weighted product of spatial distance (distance
-        between coordinates in `points`, e.g. WSI location and
+        between coordinates in `points`, e.g. WSI location) and
         feature-space distance (e.g. ResNet features).
 
         Points which are spatially further apart than
@@ -253,10 +266,10 @@ class SlideGraphConstructor:  # noqa: PIE798
         connected.
 
         Args:
-            points (ArrayLike):
+            points (np.ndarray):
                 A list of (x, y) spatial coordinates, e.g. pixel
                 locations within a WSI.
-            features (ArrayLike):
+            features (np.ndarray):
                 A list of features associated with each coordinate in
                 `points`. Must be the same length as `points`.
             lambda_d (Number):
@@ -287,8 +300,10 @@ class SlideGraphConstructor:  # noqa: PIE798
                 A dictionary defining a graph for serialisation (e.g.
                 JSON or msgpack) or converting into a torch-geometric
                 Data object where each node is the centroid (mean) of
-                the features in a cluster. The dictionary has the
-                following entries:
+                the features in a cluster.
+
+                The dictionary has the following entries:
+
                 - :class:`numpy.ndarray` - x:
                     Features of each node (mean of features in a
                     cluster). Required for torch-geometric Data.
@@ -301,9 +316,10 @@ class SlideGraphConstructor:  # noqa: PIE798
                     the WSI.
 
         Example:
-            >>> points = np.random.rand(99, 2) * 1000
+            >>> rng = np.random.default_rng()
+            >>> points = rng.random((99, 2)) * 1000
             >>> features = np.array([
-            ...     np.random.rand(11) * n
+            ...     rng.random(11) * n
             ...     for n, _ in enumerate(points)
             ... ])
             >>> graph_dict = SlideGraphConstructor.build(points, features)
@@ -319,37 +335,39 @@ class SlideGraphConstructor:  # noqa: PIE798
         # distance (nearest -> farthest).
         kd_tree = cKDTree(points)
         neighbour_distances_ckd, neighbour_indexes_ckd = kd_tree.query(
-            x=points, k=len(points)
+            x=points,
+            k=len(points),
         )
 
         # Initialise an empty 1-D condensed distance matrix.
         # For information on condensed distance matrices see:
-        # noqa - https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist
-        # noqa - https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
+        # - scipy.spatial.distance.pdist
+        # - scipy.cluster.hierarchy.linkage
         condensed_distance_matrix = np.zeros(int(len(points) * (len(points) - 1) / 2))
 
         # Find the similarity between pairs of patches
         index = 0
         for i in range(len(points) - 1):
-            # Only consider neighbours which are inside of the radius
+            # Only consider neighbours which are inside the radius
             # (neighbour_search_radius).
-            neighbour_distances_singlepoint = neighbour_distances_ckd[i][
+            neighbour_distances_single_point = neighbour_distances_ckd[i][
                 neighbour_distances_ckd[i] < neighbour_search_radius
             ]
-            neighbour_indexes_singlepoint = neighbour_indexes_ckd[i][
-                : len(neighbour_distances_singlepoint)
+            neighbour_indexes_single_point = neighbour_indexes_ckd[i][
+                : len(neighbour_distances_single_point)
             ]
 
             # Called f in the paper
             neighbour_feature_similarities = np.exp(
                 -lambda_f
                 * np.linalg.norm(
-                    features[i] - features[neighbour_indexes_singlepoint], axis=1
-                )
+                    features[i] - features[neighbour_indexes_single_point],
+                    axis=1,
+                ),
             )
             # Called d in paper
             neighbour_distance_similarities = np.exp(
-                -lambda_d * neighbour_distances_singlepoint
+                -lambda_d * neighbour_distances_single_point,
             )
             # 1 - product of similarities (1 - fd)
             # (1 = most un-similar 0 = most similar)
@@ -360,13 +378,13 @@ class SlideGraphConstructor:  # noqa: PIE798
             # (most un-similar).
             i_vs_all_similarities = np.ones(len(points))
             # Set the neighbours similarity to calculated values (similarity/fd)
-            i_vs_all_similarities[
-                neighbour_indexes_singlepoint
-            ] = neighbour_similarities
+            i_vs_all_similarities[neighbour_indexes_single_point] = (
+                neighbour_similarities
+            )
             i_vs_all_similarities = i_vs_all_similarities[i + 1 :]
-            condensed_distance_matrix[
-                index : index + len(i_vs_all_similarities)
-            ] = i_vs_all_similarities
+            condensed_distance_matrix[index : index + len(i_vs_all_similarities)] = (
+                i_vs_all_similarities
+            )
             index = index + len(i_vs_all_similarities)
 
         # Perform hierarchical clustering (using similarity as distance)
@@ -382,29 +400,29 @@ class SlideGraphConstructor:  # noqa: PIE798
             # Find the xy and feature space averages of the cluster
             point_centroids.append(np.round(points[idx, :].mean(axis=0)))
             feature_centroids.append(features[idx, :].mean(axis=0))
-        point_centroids = np.array(point_centroids)
-        feature_centroids = np.array(feature_centroids)
+        point_centroids_arr = np.array(point_centroids)
+        feature_centroids_arr = np.array(feature_centroids)
 
         adjacency_matrix = delaunay_adjacency(
-            points=point_centroids,
+            points=point_centroids_arr,
             dthresh=connectivity_distance,
         )
         edge_index = affinity_to_edge_index(adjacency_matrix)
-
+        edge_index = cast(np.ndarray, edge_index)
         return {
-            "x": feature_centroids,
+            "x": feature_centroids_arr,
             "edge_index": edge_index,
-            "coordinates": point_centroids,
+            "coordinates": point_centroids_arr,
         }
 
     @classmethod
     def visualise(
-        cls,
-        graph: Dict[str, ArrayLike],
-        color: Union[ArrayLike, str, Callable] = None,
-        node_size: Union[Number, ArrayLike, Callable] = 25,
-        edge_color: Union[str, ArrayLike] = (0, 0, 0, 0.33),
-        ax: Axes = None,
+        cls: type[SlideGraphConstructor],
+        graph: dict[str, np.ndarray],
+        color: np.ndarray | str | Callable | None = None,
+        node_size: int | np.ndarray | Callable = 25,
+        edge_color: str | ArrayLike = (0, 0, 0, 0.33),
+        ax: Axes | None = None,
     ) -> Axes:
         """Visualise a graph.
 
@@ -418,22 +436,22 @@ class SlideGraphConstructor:  # noqa: PIE798
 
         Args:
             graph (dict):
-                The graph to visualise as a dictionary with the following
-                entries:
+                The graph to visualise as a dictionary with the following entries:
+
                 - :class:`numpy.ndarray` - x:
-                    Features of each node (mean of features in a
-                    cluster). Required
+                      Features of each node (mean of features
+                      in a cluster). Required
                 - :class:`numpy.ndarray` - edge_index:
-                    Edge index matrix defining connectivity. Required
+                      Edge index matrix defining connectivity. Required
                 - :class:`numpy.ndarray` - coordinates:
-                    Coordinates of each node within the WSI (mean of
-                    point in a cluster). Required
+                      Coordinates of each node within the WSI (mean of point in a
+                      cluster). Required
             color (np.array or str or callable):
                 Colours of the nodes in the plot. If it is a callable,
                 it should take a graph as input and return a numpy array
                 of matplotlib colours. If `None` then a default function
                 is used (UMAP on `graph["x"]`).
-            node_size (int or np.array or callable):
+            node_size (int or np.ndarray or callable):
                 Size of the nodes in the plot. If it is a function then
                 it is called with the graph as an argument.
             edge_color (str):
@@ -447,9 +465,10 @@ class SlideGraphConstructor:  # noqa: PIE798
                 The axes object to plot the graph on.
 
         Example:
-            >>> points = np.random.rand(99, 2) * 1000
+            >>> rng = np.random.default_rng()
+            >>> points = rng.random((99, 2)) * 1000
             >>> features = np.array([
-            ...     np.random.rand(11) * n
+            ...     rng.random(11) * n
             ...     for n, _ in enumerate(points)
             ... ])
             >>> graph_dict = SlideGraphConstructor.build(points, features)
@@ -464,11 +483,14 @@ class SlideGraphConstructor:  # noqa: PIE798
 
         # Check that the graph is valid
         if "x" not in graph:
-            raise ValueError("Graph must contain key `x`.")
+            msg = "Graph must contain key `x`."
+            raise ValueError(msg)
         if "edge_index" not in graph:
-            raise ValueError("Graph must contain key `edge_index`.")
+            msg = "Graph must contain key `edge_index`."
+            raise ValueError(msg)
         if "coordinates" not in graph:
-            raise ValueError("Graph must contain key `coordinates`")
+            msg = "Graph must contain key `coordinates`"
+            raise ValueError(msg)
         if ax is None:
             _, ax = plt.subplots()
         if color is None:
@@ -480,15 +502,18 @@ class SlideGraphConstructor:  # noqa: PIE798
         # Plot the edges
         line_segments = nodes[edges.T]
         edge_collection = mc.LineCollection(
-            line_segments, colors=edge_color, linewidths=1
+            line_segments,
+            colors=edge_color,
+            linewidths=1,
         )
         ax.add_collection(edge_collection)
 
         # Plot the nodes
         plt.scatter(
-            *nodes.T,
-            c=color(graph) if isinstance(color, Callable) else color,
-            s=node_size(graph) if isinstance(node_size, Callable) else node_size,
+            x=nodes.T[0],
+            y=nodes.T[1],
+            c=color(graph) if callable(color) else color,
+            s=node_size(graph) if callable(node_size) else node_size,
             zorder=2,
         )
 

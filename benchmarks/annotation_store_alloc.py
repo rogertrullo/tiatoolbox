@@ -91,6 +91,8 @@ sqlite: #####################
 
 """
 
+from __future__ import annotations
+
 import argparse
 import copy
 import os
@@ -98,15 +100,14 @@ import re
 import subprocess
 import sys
 import warnings
-from numbers import Number
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Generator, Tuple
+from typing import TYPE_CHECKING, Any
 
 sys.path.append("../")
 
 try:
-    import memray  # noqa: E402
+    import memray
 except ImportError:
 
     class memray:  # noqa: N801 No CapWords convention
@@ -121,39 +122,49 @@ except ImportError:
         class Tracker:
             """Dummy Tracker context manager."""
 
-            def __init__(self, *args, **kwargs):
-                warnings.warn("Memray not installed, skipping tracking.")
+            def __init__(
+                self: memray,
+                *args: list[Any],  # noqa: ARG002
+                **kwargs: dict[str, Any],  # noqa: ARG002
+            ) -> None:
+                """Initialize :class:`Tracker`."""
+                warnings.warn("Memray not installed, skipping tracking.", stacklevel=2)
 
-            def __enter__(self):
+            def __enter__(self: memray) -> None:
                 """Dummy enter method."""
                 # Intentionally blank.
 
-            def __exit__(self, *args):
+            def __exit__(self: memray, *args: object) -> None:
                 """Dummy exit method."""
                 # Intentionally blank.
 
 
-import numpy as np  # noqa: E402
-import psutil  # noqa: E402
-from shapely.geometry import Polygon  # noqa: E402
-from tqdm import tqdm  # noqa: E402
+import numpy as np
+import psutil
+from shapely.geometry import Polygon
+from tqdm import tqdm
 
-from tiatoolbox.annotation.storage import (  # noqa: E402
+from tiatoolbox.annotation.storage import (
     Annotation,
     DictionaryStore,
     SQLiteStore,
 )
 
+if TYPE_CHECKING:  # pragma: no cover
+    from collections.abc import Generator
+    from numbers import Number
+
 
 def cell_polygon(
-    xy: Tuple[Number, Number],
+    xy: tuple[Number, Number],
     n_points: int = 20,
     radius: Number = 8,
     noise: Number = 0.01,
-    eccentricity: Tuple[Number, Number] = (1, 3),
-    repeat_first: bool = True,
+    eccentricity: tuple[Number, Number] = (1, 3),
     direction: str = "CCW",
     seed: int = 0,
+    *,
+    repeat_first: bool = True,
     round_coords: bool = False,
 ) -> Polygon:
     """Generate a fake cell boundary polygon.
@@ -179,23 +190,24 @@ def cell_polygon(
     """
     from shapely import affinity
 
-    rand_state = np.random.get_state()
-    np.random.seed(seed)
+    rand_state = np.random.default_rng().__getstate__()
+    rng = np.random.default_rng(seed)
     if repeat_first:
         n_points -= 1
 
     # Generate points about an ellipse with random eccentricity
     x, y = xy
     alpha = np.linspace(0, 2 * np.pi - (2 * np.pi / n_points), n_points)
-    rx = radius * (np.random.rand() + 0.5)
-    ry = np.random.uniform(*eccentricity) * radius - 0.5 * rx
-    x = rx * np.cos(alpha) + x + (np.random.rand(n_points) - 0.5) * noise
-    y = ry * np.sin(alpha) + y + (np.random.rand(n_points) - 0.5) * noise
+    rx = radius * (rng.random() + 0.5)
+    ry = rng.uniform(*eccentricity) * radius - 0.5 * rx
+    x = rx * np.cos(alpha) + x + (rng.random(n_points) - 0.5) * noise
+    y = ry * np.sin(alpha) + y + (rng.random(n_points) - 0.5) * noise
     boundary_coords = np.stack([x, y], axis=1).astype(int).tolist()
 
     # Copy first coordinate to the end if required
+    boundary_coords_0 = [boundary_coords[0]]
     if repeat_first:
-        boundary_coords = boundary_coords + [boundary_coords[0]]
+        boundary_coords = boundary_coords + boundary_coords_0
 
     # Swap direction
     if direction.strip().lower() == "cw":
@@ -204,7 +216,7 @@ def cell_polygon(
     polygon = Polygon(boundary_coords)
 
     # Add random rotation
-    angle = np.random.rand() * 360
+    angle = rng.random() * 360
     polygon = affinity.rotate(polygon, angle, origin="centroid")
 
     # Round coordinates to integers
@@ -212,13 +224,14 @@ def cell_polygon(
         polygon = Polygon(np.array(polygon.exterior.coords).round())
 
     # Restore the random state
-    np.random.set_state(rand_state)
+    np.random.default_rng().__setstate__(rand_state)
 
-    return polygon  # noqa: R504
+    return polygon
 
 
 def cell_grid(
-    size: Tuple[int, int] = (10, 10), spacing: Number = 25
+    size: tuple[int, int] = (10, 10),
+    spacing: Number = 25,
 ) -> Generator[Polygon, None, None]:
     """Generate a grid of cell boundaries."""
     return (
@@ -235,8 +248,9 @@ STORES = {
 
 def main(
     store: str,
+    size: tuple[int, int],
+    *,
     in_memory: bool,
-    size: Tuple[int, int],
 ) -> None:
     """Run the benchmark.
 
@@ -253,8 +267,13 @@ def main(
     if tracker_filepath.is_file():
         tracker_filepath.unlink()
 
-    with NamedTemporaryFile(mode="w+") as temp_file, memray.Tracker(
-        tracker_filepath, native_traces=True, follow_fork=True
+    with (
+        NamedTemporaryFile(mode="w+") as temp_file,
+        memray.Tracker(
+            tracker_filepath,
+            native_traces=True,
+            follow_fork=True,
+        ),
     ):
         io = ":memory:" if in_memory else temp_file  # Backing (memory/disk)
         print(f"Storing {size[0] * size[1]} cells")
@@ -287,8 +306,14 @@ def main(
             # Skip memray if not installed
             return
         regex = re.compile(r"Total memory allocated:\s*([\d.]+)MB")
-        pipe = subprocess.Popen(
-            [sys.executable, "-m", "memray", "stats", tracker_filepath.name],
+        pipe = subprocess.Popen(  # noqa: S603
+            [
+                sys.executable,
+                "-m",
+                "memray",
+                "stats",
+                tracker_filepath.name,
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )

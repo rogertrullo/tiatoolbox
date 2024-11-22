@@ -1,49 +1,77 @@
-"""Defines a set of models to be used within tiatoolbox."""
+"""Define a set of models to be used within tiatoolbox."""
+
+from __future__ import annotations
 
 import os
-import pathlib
 from pydoc import locate
-from typing import Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import torch
 
 from tiatoolbox import rcParam
-from tiatoolbox.models.architecture.vanilla import CNNBackbone, CNNModel
 from tiatoolbox.models.dataset.classification import predefined_preproc_func
-from tiatoolbox.utils.misc import download_data
+from tiatoolbox.utils import download_data
+
+if TYPE_CHECKING:  # pragma: no cover
+    from pathlib import Path
+
+    from tiatoolbox.models.models_abc import IOConfigABC
+
 
 __all__ = ["get_pretrained_model", "fetch_pretrained_weights"]
 PRETRAINED_INFO = rcParam["pretrained_model_info"]
 
 
-def fetch_pretrained_weights(model_name: str, save_path: str, overwrite: bool = True):
+def fetch_pretrained_weights(
+    model_name: str,
+    save_path: str | Path | None = None,
+    *,
+    overwrite: bool = False,
+) -> Path:
     """Get the pretrained model information from yml file.
 
     Args:
         model_name (str):
             Refer to `::py::meth:get_pretrained_model` for all supported
             model names.
-        save_path (str):
+        save_path (str | Path):
             Path to save the weight of the
           corresponding `model_name`.
         overwrite (bool):
             Overwrite existing downloaded weights.
+
+    Returns:
+        Path:
+            The local path to the cached pretrained weights after downloading.
+
     """
+    if model_name not in PRETRAINED_INFO:
+        msg = f"Pretrained model `{model_name}` does not exist"
+        raise ValueError(msg)
+
     info = PRETRAINED_INFO[model_name]
-    download_data(info["url"], save_path, overwrite)
+
+    if save_path is None:
+        file_name = info["url"].split("/")[-1]
+        save_path = rcParam["TIATOOLBOX_HOME"] / "models" / file_name
+
+    download_data(info["url"], save_path=save_path, overwrite=overwrite)
+    return save_path
 
 
 def get_pretrained_model(
-    pretrained_model: str = None,
-    pretrained_weights: Union[str, pathlib.Path] = None,
+    pretrained_model: str | None = None,
+    pretrained_weights: str | Path | None = None,
+    *,
     overwrite: bool = False,
-):
+) -> tuple[torch.nn.Module, IOConfigABC]:
     """Load a predefined PyTorch model with the appropriate pretrained weights.
 
     Args:
         pretrained_model (str):
             Name of the existing models support by tiatoolbox for
             processing the data. The models currently supported:
+
                 - alexnet
                 - resnet18
                 - resnet34
@@ -62,18 +90,19 @@ def get_pretrained_model(
                 - mobilenet_v3_small
                 - googlenet
 
-          Each model has been trained on the Kather100K and PCam
-          datasets. The format of pretrained_model is
-          <model_name>-<dataset_name>. For example, to use a resnet18
-          model trained on Kather100K, use `resnet18-kather100k and to
-          use an alexnet model trained on PCam, use `alexnet-pcam`.
+            Each model has been trained on the Kather100K and PCam
+            datasets. The format of pretrained_model is
+            <model_name>-<dataset_name>. For example, to use a resnet18
+            model trained on Kather100K, use `resnet18-kather100k and to
+            use an alexnet model trained on PCam, use `alexnet-pcam`.
 
+            By default, the corresponding pretrained weights will also be
+            downloaded. However, you can override with your own set of
+            weights via the `pretrained_weights` argument. Argument is case-insensitive.
 
-        By default, the corresponding pretrained weights will also be
-        downloaded. However, you can override with your own set of
-        weights via the `pretrained_weights` argument. Argument is case
-        insensitive. pretrained_weights (str): Path to the weight of the
-        corresponding `pretrained_model`.
+        pretrained_weights (str):
+            Path to the weight of the corresponding `pretrained_model`.
+
         overwrite (bool):
             To always overwriting downloaded weights.
 
@@ -90,29 +119,30 @@ def get_pretrained_model(
 
     """
     if not isinstance(pretrained_model, str):
-        raise ValueError("pretrained_model must be a string.")
+        msg = "pretrained_model must be a string."
+        raise TypeError(msg)
 
     if pretrained_model not in PRETRAINED_INFO:
-        raise ValueError(f"Pretrained model `{pretrained_model}` does not exist.")
+        msg = f"Pretrained model `{pretrained_model}` does not exist."
+        raise ValueError(msg)
 
     info = PRETRAINED_INFO[pretrained_model]
 
     arch_info = info["architecture"]
-    creator = locate((f"tiatoolbox.models.architecture" f'.{arch_info["class"]}'))
+    creator = locate(f"tiatoolbox.models.architecture.{arch_info['class']}")
 
     model = creator(**arch_info["kwargs"])
-    # TODO: a dictionary of dataset specific or transformation ?
+    # TODO(TBC): Dictionary of dataset specific or transformation?  # noqa: FIX002,TD003
     if "dataset" in info:
         # ! this is a hack currently, need another PR to clean up
         # ! associated pre-processing coming from dataset (Kumar, Kather, etc.)
         model.preproc_func = predefined_preproc_func(info["dataset"])
 
     if pretrained_weights is None:
-        file_name = info["url"].split("/")[-1]
-        pretrained_weights = os.path.join(
-            rcParam["TIATOOLBOX_HOME"], "models/", file_name
+        pretrained_weights = fetch_pretrained_weights(
+            pretrained_model,
+            overwrite=overwrite,
         )
-        fetch_pretrained_weights(pretrained_model, pretrained_weights, overwrite)
 
     # ! assume to be saved in single GPU mode
     # always load on to the CPU
@@ -120,8 +150,9 @@ def get_pretrained_model(
     model.load_state_dict(saved_state_dict, strict=True)
 
     # !
+
     io_info = info["ioconfig"]
-    creator = locate((f"tiatoolbox.models.engine" f'.{io_info["class"]}'))
+    creator = locate(f"tiatoolbox.models.engine.{io_info['class']}")
 
     iostate = creator(**io_info["kwargs"])
     return model, iostate

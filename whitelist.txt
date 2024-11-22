@@ -6,6 +6,7 @@
 1xshxsw
 20x
 2nd
+3D
 3rd
 40x
 B301
@@ -14,10 +15,13 @@ Byfield
 CHW
 CUDA
 DICOM
+DICOMDIR
 DNS
 Dataloader
 Dataset
+Datasets
 Delaunay
+E0110
 E1120
 FCN
 GPL
@@ -28,6 +32,7 @@ IFD
 JP2
 Jupyter
 Kumar
+Liskov
 MERCHANTABILITY
 Macenko
 Munkres
@@ -38,6 +43,7 @@ Nx4
 NxM
 NxN
 OME
+Omero
 Omnyx
 OpenCV
 Otsu's
@@ -47,6 +53,7 @@ PYL
 Peter
 Peter554
 Preload
+R0201
 RGB
 RGBA
 ROI
@@ -61,9 +68,13 @@ W0079
 W0105
 W0123
 W0143
+W0201
 W0212
 W0221
+W0612
+W0613
 W0703
+W6003
 W6004
 WRT
 XY
@@ -85,6 +96,7 @@ coord
 coords
 csv
 cuda
+customizable
 cv2
 dataframe
 dataset
@@ -121,8 +133,10 @@ macports
 memray
 mpp
 mse
+multiscales
 natively
 ndarray
+ngff
 nn
 noinspection
 normalizer
@@ -132,6 +146,7 @@ numpy
 openslide
 otsu
 pathlib
+pdist
 pixman
 postproc
 pred
@@ -144,6 +159,7 @@ pyright
 qtconsole
 quickstart
 reimport
+renderer
 resampling
 rescale
 rtree
@@ -153,6 +169,7 @@ sigma1
 sigma2
 skipcq
 skipcq
+sqlite3
 superset
 svs
 tiatoolbox
@@ -165,7 +182,7 @@ uint8
 uncallable
 v4
 viridis
-w0613
+wkb
 wsi
 wsireader
 zarr

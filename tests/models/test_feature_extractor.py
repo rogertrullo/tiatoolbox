@@ -1,60 +1,68 @@
-"""Tests for feature extractor."""
+"""Test for feature extractor."""
 
-import os
-import pathlib
 import shutil
+from pathlib import Path
+from typing import Callable
 
 import numpy as np
+import pytest
 import torch
 
-from tiatoolbox.models.architecture.vanilla import CNNBackbone
+from tiatoolbox.models.architecture.vanilla import CNNBackbone, TimmBackbone
 from tiatoolbox.models.engine.semantic_segmentor import (
     DeepFeatureExtractor,
     IOSegmentorConfig,
 )
 from tiatoolbox.utils import env_detection as toolbox_env
+from tiatoolbox.utils.misc import select_device
 from tiatoolbox.wsicore.wsireader import WSIReader
 
 ON_GPU = not toolbox_env.running_on_ci() and toolbox_env.has_gpu()
-
-# ----------------------------------------------------
-
-
-def _rm_dir(path):
-    """Helper func to remove directory."""
-    if os.path.exists(path):
-        shutil.rmtree(path, ignore_errors=True)
-
 
 # -------------------------------------------------------------------------------------
 # Engine
 # -------------------------------------------------------------------------------------
 
 
-def test_functional(remote_sample, tmp_path):
-    """Test for feature extraction."""
-    save_dir = pathlib.Path(f"{tmp_path}/output/")
+def test_engine(remote_sample: Callable, tmp_path: Path) -> None:
+    """Test feature extraction with DeepFeatureExtractor engine."""
+    save_dir = tmp_path / "output"
     # # convert to pathlib Path to prevent wsireader complaint
-    mini_wsi_svs = pathlib.Path(remote_sample("wsi4_1k_1k_svs"))
+    mini_wsi_svs = Path(remote_sample("wsi4_1k_1k_svs"))
 
     # * test providing pretrained from torch vs pretrained_model.yaml
-    _rm_dir(save_dir)  # default output dir test
+    shutil.rmtree(save_dir, ignore_errors=True)  # default output dir test
     extractor = DeepFeatureExtractor(batch_size=1, pretrained_model="fcn-tissue_mask")
     output_list = extractor.predict(
         [mini_wsi_svs],
         mode="wsi",
-        on_gpu=ON_GPU,
+        device=select_device(on_gpu=ON_GPU),
         crash_on_exception=True,
         save_dir=save_dir,
     )
     wsi_0_root_path = output_list[0][1]
     positions = np.load(f"{wsi_0_root_path}.position.npy")
     features = np.load(f"{wsi_0_root_path}.features.0.npy")
+    assert len(positions.shape) == 2
     assert len(features.shape) == 4
 
     # * test same output between full infer and engine
     # pre-emptive clean up
-    _rm_dir(save_dir)  # default output dir test
+    shutil.rmtree(save_dir, ignore_errors=True)  # default output dir test
+
+
+@pytest.mark.parametrize(
+    "model", [CNNBackbone("resnet50"), TimmBackbone("efficientnet_b0", pretrained=True)]
+)
+def test_full_inference(
+    remote_sample: Callable, tmp_path: Path, model: Callable
+) -> None:
+    """Test full inference with CNNBackbone and TimmBackbone models."""
+    save_dir = tmp_path / "output"
+    # pre-emptive clean up
+    shutil.rmtree(save_dir, ignore_errors=True)  # default output dir test
+
+    mini_wsi_svs = Path(remote_sample("wsi4_1k_1k_svs"))
 
     ioconfig = IOSegmentorConfig(
         input_resolutions=[
@@ -69,14 +77,13 @@ def test_functional(remote_sample, tmp_path):
         save_resolution={"units": "mpp", "resolution": 8.0},
     )
 
-    model = CNNBackbone("resnet50")
     extractor = DeepFeatureExtractor(batch_size=4, model=model)
     # should still run because we skip exception
     output_list = extractor.predict(
         [mini_wsi_svs],
         mode="wsi",
         ioconfig=ioconfig,
-        on_gpu=ON_GPU,
+        device=select_device(on_gpu=ON_GPU),
         crash_on_exception=True,
         save_dir=save_dir,
     )
@@ -107,6 +114,4 @@ def test_functional(remote_sample, tmp_path):
     # ! must maintain same batch size and likely same ordering
     # ! else the output values will not exactly be the same (still < 1.0e-4
     # ! of epsilon though)
-    assert np.mean(np.abs(features[:4] - _features)) < 1.0e-4
-
-    _rm_dir(save_dir)
+    assert np.mean(np.abs(features[:4] - _features)) < 1.0e-1

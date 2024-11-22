@@ -1,0 +1,49 @@
+# This workflow will perform code type checking using mypy
+
+name: mypy type checking
+
+on:
+  push:
+    branches: [ develop, pre-release, master, main ]
+  pull_request:
+    branches: [ develop, pre-release, master, main ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt-get install -y libopenslide-dev openslide-tools libopenjp2-7 libopenjp2-tools
+        python -m pip install --upgrade pip
+        pip install -r requirements/requirements_dev.txt
+
+    - name: Perform type checking
+      run: |
+        mypy --install-types --non-interactive --follow-imports=skip \
+          tiatoolbox/__init__.py \
+          tiatoolbox/__main__.py \
+          tiatoolbox/typing.py \
+          tiatoolbox/tiatoolbox.py \
+          tiatoolbox/utils \
+          tiatoolbox/tools \
+          tiatoolbox/data \
+          tiatoolbox/annotation \
+          tiatoolbox/cli/common.py

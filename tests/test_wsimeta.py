@@ -1,21 +1,21 @@
-"""Tests for obtaining whole-slide image metadata."""
+"""Test for obtaining whole-slide image metadata."""
+
+from pathlib import Path
 
 import numpy as np
 import pytest
 
-from tiatoolbox.wsicore import wsimeta, wsireader
+from tiatoolbox.wsicore import WSIMeta, wsimeta, wsireader
 
 
-# noinspection PyTypeChecker
-def test_wsimeta_init_fail():
+def test_wsimeta_init_fail() -> None:
     """Test incorrect init for WSIMeta raises TypeError."""
     with pytest.raises(TypeError):
-        # skipcq: PYL-E1120
-        wsimeta.WSIMeta(slide_dimensions=(None, None))
+        wsimeta.WSIMeta(slide_dimensions=(None, None), axes="YXS")
 
 
 @pytest.mark.filterwarnings("ignore")
-def test_wsimeta_validate_fail():
+def test_wsimeta_validate_fail() -> None:
     """Test failure cases for WSIMeta validation."""
     meta = wsimeta.WSIMeta(slide_dimensions=(512, 512), axes="YXS", level_dimensions=[])
     assert meta.validate() is False
@@ -52,19 +52,20 @@ def test_wsimeta_validate_fail():
 
 
 @pytest.mark.filterwarnings("ignore")
-def test_wsimeta_validate_invalid_axes():
+def test_wsimeta_validate_invalid_axes() -> None:
     """Test failure cases for WSIMeta validation with invalid axes."""
     meta = wsimeta.WSIMeta(slide_dimensions=(512, 512), axes="YXSF")
     assert meta.validate() is False
 
 
 @pytest.mark.filterwarnings("ignore")
-def test_wsimeta_validate_pass():
+def test_wsimeta_validate_pass() -> None:
     """Test WSIMeta validation."""
     meta = wsimeta.WSIMeta(slide_dimensions=(512, 512), axes="YXS")
     assert meta.validate()
 
-    meta = wsimeta.WSIMeta(
+    # Test with top-level import
+    meta = WSIMeta(
         slide_dimensions=(512, 512),
         axes="YXS",
         level_dimensions=[(512, 512), (256, 256)],
@@ -74,14 +75,14 @@ def test_wsimeta_validate_pass():
     assert meta.validate()
 
 
-def test_wsimeta_openslidewsireader_ndpi(sample_ndpi):
+def test_wsimeta_openslidewsireader_ndpi(sample_ndpi: Path) -> None:
     """Test OpenSlide reader metadata for ndpi."""
     wsi_obj = wsireader.OpenSlideWSIReader(sample_ndpi)
     meta = wsi_obj.info
     assert meta.validate()
 
 
-def test_wsimeta_openslidewsireader_svs(sample_svs):
+def test_wsimeta_openslidewsireader_svs(sample_svs: Path) -> None:
     """Test OpenSlide reader metadata for svs."""
     wsi_obj = wsireader.OpenSlideWSIReader(sample_svs)
     meta = wsi_obj.info
@@ -92,7 +93,7 @@ def test_wsimeta_openslidewsireader_svs(sample_svs):
     assert isinstance(m["mpp"], tuple)
 
 
-def test_wsimeta_setter(sample_svs):
+def test_wsimeta_setter(sample_svs: Path) -> None:
     """Test setter for metadata."""
     wsi = wsireader.OpenSlideWSIReader(sample_svs)
     meta = wsi.info

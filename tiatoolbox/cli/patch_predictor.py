@@ -1,15 +1,18 @@
 """Command line interface for patch_predictor."""
+
+from __future__ import annotations
+
 import click
 
 from tiatoolbox.cli.common import (
     cli_batch_size,
+    cli_device,
     cli_file_type,
     cli_img_input,
     cli_masks,
     cli_merge_predictions,
     cli_mode,
     cli_num_loader_workers,
-    cli_on_gpu,
     cli_output_path,
     cli_pretrained_model,
     cli_pretrained_weights,
@@ -30,7 +33,7 @@ from tiatoolbox.cli.common import (
     default="patch_prediction",
 )
 @cli_file_type(
-    default="*.png, *.jpg, *.jpeg, *.tif, *.tiff, *.svs, *.ndpi, *.jp2, *.mrxs"
+    default="*.png, *.jpg, *.jpeg, *.tif, *.tiff, *.svs, *.ndpi, *.jp2, *.mrxs",
 )
 @cli_mode(
     usage_help="Type of input file to process.",
@@ -42,34 +45,35 @@ from tiatoolbox.cli.common import (
 @cli_return_probabilities(default=False)
 @cli_merge_predictions(default=True)
 @cli_return_labels(default=True)
-@cli_on_gpu(default=False)
+@cli_device(default="cpu")
 @cli_batch_size(default=1)
 @cli_resolution(default=0.5)
 @cli_units(default="mpp")
 @cli_masks(default=None)
 @cli_num_loader_workers(default=0)
-@cli_verbose()
+@cli_verbose(default=True)
 def patch_predictor(
-    pretrained_model,
-    pretrained_weights,
-    img_input,
-    file_types,
-    masks,
-    mode,
-    output_path,
-    batch_size,
-    resolution,
-    units,
-    return_probabilities,
-    return_labels,
-    merge_predictions,
-    num_loader_workers,
-    on_gpu,
-    verbose,
-):
+    pretrained_model: str,
+    pretrained_weights: str,
+    img_input: str,
+    file_types: str,
+    masks: str | None,
+    mode: str,
+    output_path: str,
+    batch_size: int,
+    resolution: float,
+    units: str,
+    num_loader_workers: int,
+    device: str,
+    *,
+    return_probabilities: bool,
+    return_labels: bool,
+    merge_predictions: bool,
+    verbose: bool,
+) -> None:
     """Process an image/directory of input images with a patch classification CNN."""
-    from tiatoolbox.models.engine.patch_predictor import PatchPredictor
-    from tiatoolbox.utils.misc import save_as_json
+    from tiatoolbox.models import PatchPredictor
+    from tiatoolbox.utils import save_as_json
 
     files_all, masks_all, output_path = prepare_model_cli(
         img_input=img_input,
@@ -96,7 +100,7 @@ def patch_predictor(
         return_labels=return_labels,
         resolution=resolution,
         units=units,
-        on_gpu=on_gpu,
+        device=device,
         save_dir=output_path,
         save_output=True,
     )
